@@ -1,0 +1,39 @@
+/*
+ * snowflake-sheet-match.jsonata
+ *
+ * After a successful Jira transition, the workflow queries Snowflake for
+ * recently processed files and matches the row's input file value against
+ * the FILE_ID column. The match yields the downstream output file URL and
+ * the target cell address in the source sheet so we can write the URL
+ * back to column AL of the same row that triggered the loop iteration.
+ *
+ * The interesting bit is the cell address: it is built dynamically from
+ * the loop iteration's Row number ("AL" & $string($.inputFile.Row)), so
+ * the sheet update lands on the exact row that the loop is currently
+ * processing. No client-side bookkeeping, no off-by-one risk.
+ *
+ * Input shape:
+ *   {
+ *     "inputFile": { "Row": 42, "Upstream Input File": "1aB2cD...", ... },
+ *     "mapping":   [ { "FILE_ID": "...", "OUTPUT_FILE_LINK": "...", ... }, ... ]
+ *   }
+ *
+ * Output:
+ *   {
+ *     "result":   "<output URL or empty string>",
+ *     "cell":     "AL<row number>",
+ *     "has_link": true | false
+ *   }
+ */
+
+(
+  $match := $filter($.mapping, function($f) {
+    $contains($string($.inputFile."Upstream Input File"), $f.FILE_ID)
+  });
+
+  {
+    "result":   $match[0].OUTPUT_FILE_LINK ? $match[0].OUTPUT_FILE_LINK : "",
+    "cell":     "AL" & $string($.inputFile.Row),
+    "has_link": $exists($match[0].OUTPUT_FILE_LINK)
+  }
+)

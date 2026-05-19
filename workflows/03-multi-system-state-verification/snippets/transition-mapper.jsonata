@@ -1,0 +1,59 @@
+/*
+ * transition-mapper.jsonata
+ *
+ * Maps a sheet row's Build Status (and the ticket's Tier, where it matters)
+ * to a Jira transition ID. The mapping covers four outcomes from the cross
+ * product of Build Status (Escalated, In Progress, Completed) and Tier
+ * (Local, Enterprise). When Build Status is blank or "not started" the
+ * mapping yields an empty string and the downstream filter skips the row.
+ *
+ * The transition IDs below (461, 511, 541, 6, 601) are illustrative values
+ * from the Jira project's transition graph. The numeric IDs themselves
+ * are not load-bearing in this file. What matters is that one input row
+ * deterministically produces one transition ID, and that "skip" is a
+ * first-class outcome (empty string), not an error.
+ *
+ * Output shape:
+ *   {
+ *     "jiraStatus":          "<transition ID or empty>",
+ *     "jiraTransitionLink":  "https://<host>/rest/api/2/issue/<key>/transitions",
+ *     "jiraTicketLink":      "https://<host>/rest/api/2/issue/<key>",
+ *     "jiraId":              "<INTAKE-xxxxxx>",
+ *     "jiraTransitionTitle": "<human-readable name or empty>"
+ *   }
+ */
+
+(
+  /* 1. Pull the two sheet fields, trimming spaces just in case */
+  $buildStatus := $trim($lookup($, "Build Status"));
+  $issueKey    := $trim($lookup($, "Issue Key"));
+  $tier        := $trim($lookup($, "Tier"));
+
+  /* 2. Map Build Status -> Jira transition ID (case-insensitive).
+        For Completed rows, Tier picks the terminal transition: Local
+        merchants graduate via the standard "Auto-Build Complete"
+        transition, Enterprise merchants take a separate path. */
+  $transitionId :=
+    $lowercase($buildStatus) = "escalated"   ? "461" :
+    $lowercase($buildStatus) = "in progress" ? "511" :
+    $lowercase($buildStatus) = "completed"   ?
+      ($lowercase($tier) = "enterprise" ? "601" : "6") :
+    /* not-started or blank -> skip transition */
+    "";
+
+  /* 3. Emit the object used by downstream HTTP steps */
+  {
+    "jiraStatus":         $transitionId,
+    "jiraTransitionLink": "https://<jira-host>/rest/api/2/issue/" &
+                           $issueKey & "/transitions",
+    "jiraTicketLink":     "https://<jira-host>/rest/api/2/issue/" &
+                           $issueKey,
+    "jiraId":             $issueKey,
+    "jiraTransitionTitle":
+      $transitionId = "461" ? "Escalated" :
+      $transitionId = "511" ? "Build In Progress" :
+      $transitionId = "6"   ? "Auto-Build Complete" :
+      $transitionId = "601" ? "Manual-Build Complete" :
+      ""
+  }
+)

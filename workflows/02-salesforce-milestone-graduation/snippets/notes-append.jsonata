@@ -1,0 +1,33 @@
+/*
+ * Dated-note append pattern (Salesforce text field).
+ *
+ * Salesforce REST has no native "append to long-text-area" operation.
+ * To append, you read the existing field first (a separate find_records
+ * step), build the appended string in this transform, then write the
+ * combined value back in a third step. Three steps instead of one.
+ *
+ * Inputs:
+ *   notes        the current value of the long-text-area field
+ *                (null or empty string if the case has no notes yet)
+ *
+ * Output:
+ *   appendedNotes  the new value to write back. If there was prior
+ *                  content, the new dated line is separated from it by
+ *                  a blank line. If the field was empty, the new line
+ *                  stands alone (no leading blank line).
+ *
+ * Date format M.D.Y matches the team's existing convention in the
+ * notes column, so the new lines visually match older entries.
+ */
+(
+  $date := $now('[M01].[D01].[Y0001]');
+  $newNote := $date & ' - Merchant Qualified for Early Activation';
+  $existing := notes;
+  $appendedNotes := $existing != null and $trim($existing) != ''
+    ? $existing & '\n\n' & $newNote
+    : $newNote;
+
+  {
+    "appendedNotes": $appendedNotes
+  }
+)

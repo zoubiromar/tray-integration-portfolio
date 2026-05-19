@@ -1,0 +1,7 @@
+ANONYMIZATION.md
+.DS_Store
+*.swp
+*.bak
+.vscode/
+.idea/
+node_modules/

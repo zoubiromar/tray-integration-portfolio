@@ -1,0 +1,37 @@
+/*
+ * Milestone-by-name lookup against a custom Salesforce object.
+ *
+ * The workflow uses a custom Milestone__c object (not the standard
+ * CaseMilestone object) linked to a Case through a Case__c lookup
+ * field. A prior find_records step pulls all milestones for the
+ * current case into the `milestones` array, each row carrying Id,
+ * Name, and Status__c.
+ *
+ * This transform picks the row whose Name matches the target
+ * milestone, then returns its Id and current Status__c. The Id feeds
+ * the next update_record step; the Status__c value feeds the
+ * skip-if-already-Complete gate so the workflow stays idempotent.
+ *
+ * `[0]` is safe here because per-case milestone names are unique in
+ * this schema. If two rows ever shared a name the first one would
+ * win, which is the same behavior the analyst team uses by hand.
+ *
+ * Inputs:
+ *   milestones  array of milestone records for the current case
+ *
+ * Output:
+ *   setupMenuId           Id of the "Setup Menu" milestone, or null
+ *   setupCatalogId        Id of the "Setup Catalog" milestone, or null
+ *   setupCatalogStatus    current Status__c on Setup Catalog, used as
+ *                         the idempotency check
+ */
+(
+  $setupMenuId    := $filter(milestones, function($m) { $m.Name = 'Setup Menu'    })[0].Id;
+  $setupCatalogId := $filter(milestones, function($m) { $m.Name = 'Setup Catalog' })[0].Id;
+
+  {
+    "setupMenuId":        $setupMenuId,
+    "setupCatalogId":     $setupCatalogId,
+    "setupCatalogStatus": $filter(milestones, function($m) { $m.Name = 'Setup Catalog' })[0].Status__c
+  }
+)

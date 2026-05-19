@@ -1,0 +1,33 @@
+/*
+ * transition-mapper.jsonata
+ *
+ * What it does:
+ *   Reads the current Jira issue payload (from the upstream GET issue step),
+ *   inspects the "service type" custom field, and emits the JSON body for
+ *   Jira's POST /transitions endpoint. Picks one of two transition IDs based
+ *   on whether the ticket represents a Conversion or any other service type.
+ *
+ * Where it sits:
+ *   Step "json-transformer-1-c" (CATALOG_TEAM branch) and "json-transformer-1-s"
+ *   (SSIO branch). Both branches use an identical query; only their `data`
+ *   binding differs (-c reads from http-client-1-c, -s from http-client-1-s).
+ *
+ * Design choice:
+ *   The transition decision lives in JSONata instead of a script step so the
+ *   mapping is declarative and the workflow JSON stays diff-friendly. Adding
+ *   a new service type means adding one ternary branch, not redeploying JS.
+ *
+ *   Transition IDs (541, 501) are illustrative Jira transition IDs from the
+ *   workflow's "Pending Auto-Build" state. Replace with the IDs from your
+ *   own Jira project's workflow.
+ */
+
+(
+  $serviceType := currJiraStatus.body.fields."<CF_SERVICE_TYPE>".value;
+
+  {
+    "transition": {
+      "id": ($serviceType = "Conversion") ? "541" : "501"
+    }
+  }
+)

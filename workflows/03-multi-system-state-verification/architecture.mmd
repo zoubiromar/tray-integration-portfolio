@@ -1,0 +1,25 @@
+%%{init: {'flowchart': {'nodeSpacing': 25, 'rankSpacing': 30}, 'themeVariables': {'fontSize': '13px'}}}%%
+flowchart TD
+    T[Scheduled trigger<br/>every 2 hours] --> R[Read Vendor<br/>Submission Tracker sheet]
+    R --> L[Loop over<br/>submission rows]
+    L --> M[Map Build Status + Tier<br/>to transition ID]
+    M --> G[GET Jira ticket<br/>status + custom fields]
+    G --> S[Skip-list filter<br/>anti-backsliding]
+    S --> B1{Should<br/>update?}
+    B1 -- no --> L
+    B1 -- yes --> B2{Transition is<br/>Completed-class?}
+    B2 -- no --> P1[POST transition<br/>v2 API]
+    P1 -. error .-> EL1[Log error<br/>continue loop]
+    B2 -- yes --> D[List upstream<br/>input folder]
+    D --> F[File existence check<br/>by ticket key]
+    F --> B3{File still<br/>present?}
+    B3 -- yes --> L
+    B3 -- no --> P2[POST transition<br/>v2 API]
+    P2 -. error .-> EL2[Log error<br/>continue loop]
+    P2 --> SQ[Snowflake query<br/>processing_results]
+    SQ --> MM[Match by FILE_ID<br/>get output URL + cell]
+    MM --> B4{Has output<br/>link?}
+    B4 -- no --> L
+    B4 -- yes --> W[Write URL to<br/>sheet cell AL row]
+    W --> A[Build ADF body<br/>with blockCard]
+    A --> P3[POST v3 comment<br/>to Jira ticket]

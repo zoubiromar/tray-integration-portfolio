@@ -1,0 +1,62 @@
+/*
+ * adf-comment-body.jsonata
+ *
+ * Builds the request body for a POST /rest/api/3/issue/{key}/comment call.
+ *
+ * Background: Jira Cloud has two REST API versions for comments. The v2
+ * API takes a plain-text "body" string. The v3 API takes an ADF
+ * (Atlassian Document Format) document, which is a JSON tree of typed
+ * nodes (doc -> paragraph -> text, with optional marks like strong/em,
+ * and structural nodes like blockCard, mediaSingle, etc.). ADF is more
+ * verbose, but it unlocks rich content in the Jira UI.
+ *
+ * The magic here is the "blockCard" node. When you put a URL inside a
+ * blockCard, Jira renders it as a smart-link preview card with the
+ * destination's thumbnail and title, hover preview, and click-through.
+ * For a Drive file URL that means catalog specialists see the file
+ * icon and name directly in the ticket thread, with one-click access,
+ * instead of a bare URL string.
+ *
+ * Tradeoff: v3 + ADF is more verbose to author than v2 plain text. The
+ * payoff is the rendered preview, which is worth the extra structure
+ * when the comment is a handoff signal for humans.
+ *
+ * Input:
+ *   { "link": { "result": "<URL to the downstream output file>", ... } }
+ *
+ * Output: the full POST body, with "body" being an ADF document.
+ */
+
+{
+  "body": {
+    "type": "doc",
+    "version": 1,
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "Done. " },
+          {
+            "type": "text",
+            "text": "Auto-Build output ready",
+            "marks": [{ "type": "strong" }]
+          }
+        ]
+      },
+      {
+        "type": "blockCard",
+        "attrs": { "url": link.result }
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {
+            "type": "text",
+            "text": "(Automated message)",
+            "marks": [{ "type": "em" }]
+          }
+        ]
+      }
+    ]
+  }
+}

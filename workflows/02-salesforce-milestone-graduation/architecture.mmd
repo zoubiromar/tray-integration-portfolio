@@ -1,0 +1,17 @@
+%%{init: {'flowchart': {'nodeSpacing': 25, 'rankSpacing': 30}, 'themeVariables': {'fontSize': '13px'}}}%%
+flowchart TD
+    A[Scheduled trigger<br/>every 30 min] --> B[Snowflake eligibility query<br/>returns qualifying merchants]
+    B --> C{Loop over rows}
+    C --> D[Read Case<br/>notes + current OwnerId]
+    D --> E[Read Milestones<br/>filter by Case__c lookup]
+    E --> F[JSONata transform<br/>build appendedNotes,<br/>milestone IDs, isIntegrated]
+    F --> G{Setup Catalog<br/>already Complete?}
+    G -- yes --> C
+    G -- no --> H{isIntegrated?}
+    H -- true --> I[Update Setup Catalog<br/>Status__c = Complete]
+    I --> J[Update Case:<br/>append notes,<br/>OwnerId = Integrations queue]
+    J --> C
+    H -- false --> K[Update Setup Menu<br/>Status__c = Complete]
+    K --> L[Update Setup Catalog<br/>Status__c = Complete]
+    L --> M[Update Case:<br/>append notes,<br/>write original OwnerId back]
+    M --> C

@@ -1,0 +1,24 @@
+%%{init: {'flowchart': {'nodeSpacing': 25, 'rankSpacing': 30}, 'themeVariables': {'fontSize': '13px'}}}%%
+flowchart TD
+    T[Scheduled Trigger<br/>hourly]
+    SQL[Snowflake: read<br/>task_status table]
+    L[Loop rows]
+    B{BATCH_TYPE<br/>== SSIO?}
+
+    %% CATALOG branch
+    RX[Regex extract<br/>INTAKE-#&#92;d+&#125;&#41; from BATCH_ID]
+    GC[GET Jira issue<br/>by extracted key]
+    GateC{JOB status COMPLETE<br/>AND ticket status<br/>Pending Auto-Build?}
+    TC[POST transition<br/>catalog branch]
+
+    %% SSIO branch
+    JB[Build JQL body<br/>from BUSINESS_IDS]
+    JQL[POST Jira<br/>&#47;search&#47;jql]
+    EX[Extract issue key<br/>from JQL response]
+    GS[GET Jira issue<br/>by extracted key]
+    GateS{JOB status COMPLETE<br/>AND ticket status<br/>Pending Auto-Build?}
+    TS[POST transition<br/>SSIO branch]
+
+    T --> SQL --> L --> B
+    B -- false --> RX --> GC --> GateC -- yes --> TC
+    B -- true --> JB --> JQL --> EX --> GS --> GateS -- yes --> TS

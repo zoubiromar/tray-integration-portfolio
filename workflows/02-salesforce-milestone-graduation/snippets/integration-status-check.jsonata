@@ -1,0 +1,41 @@
+/*
+ * isIntegrated boolean derivation.
+ *
+ * The Snowflake query returns a `pos_provider` column. The shape of
+ * that value drives a two-path branch downstream:
+ *
+ *   integrated      real POS system name (e.g. "Square", "Toast")
+ *   non-integrated  null, empty string, or the sentinel
+ *                   'non_integrated_mx'
+ *
+ * Three conditions instead of one truthy check, because each one
+ * catches a different real case:
+ *
+ *   posProvider != null
+ *       The store row had no POS field set at all.
+ *
+ *   posProvider != ''
+ *       The store row had a POS field but it was blank
+ *       (string coercion from an empty Snowflake column).
+ *
+ *   posProvider != 'non_integrated_mx'
+ *       The upstream catalog system writes this literal sentinel
+ *       when a merchant is explicitly flagged as non-integrated.
+ *       It is a truthy string, so a plain `if (posProvider)` check
+ *       would route these the wrong way.
+ *
+ * Inputs:
+ *   posProvider  string value pulled from the loop iteration row
+ *
+ * Output:
+ *   isIntegrated  boolean used by the downstream branch step
+ */
+(
+  $isIntegrated := posProvider != null
+                   and posProvider != ''
+                   and posProvider != 'non_integrated_mx';
+
+  {
+    "isIntegrated": $isIntegrated
+  }
+)

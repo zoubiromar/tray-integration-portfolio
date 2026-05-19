@@ -1,0 +1,76 @@
+/*
+ * skip-list-filter.jsonata
+ *
+ * Anti-backsliding gate. This workflow runs every 2 hours against a sheet
+ * that vendors edit by hand, so the same row can be "Completed" for days
+ * while its corresponding ticket has already moved on through downstream
+ * QA, upload, and resolution steps. Without a guard, every run would try
+ * to push the ticket back into "Auto-Build Complete" even after a human
+ * has resolved it.
+ *
+ * The skip list below enumerates statuses where a transition would be
+ * wrong:
+ *   - "Auto-Build Complete":   the terminal state this workflow targets;
+ *                              if it's already there, nothing to do.
+ *   - "Pending Size Inference",
+ *     "Catalog QA",
+ *     "Upload",
+ *     "Collections",
+ *     "In Final Review",
+ *     "Pending Verification":  the ticket has moved past Auto-Build and
+ *                              into downstream pipeline stages. Pushing
+ *                              it back would undo human review work.
+ *   - "Blocked":               someone has flagged a problem; automation
+ *                              should not override that.
+ *   - "Resolved", "Done":      ticket is closed. Reopening via a
+ *                              transition would create noise.
+ *   - "Reopened":              already in a manual-handling state.
+ *   - "Won't Do":              an explicit decision was made not to
+ *                              process this ticket.
+ *
+ * The second guard ($mxs != "Auto-Build Service") ensures we only act on
+ * tickets actually routed through the auto-build pipeline; other service
+ * types use different automations.
+ *
+ * The third guard (current status == target transition title) is a
+ * no-op protection: even if the status is not in the skip list, if the
+ * ticket is already at the destination we don't fire a redundant POST.
+ *
+ * Output:
+ *   { "statusFilter": "true"  }  <- skip this ticket
+ *   { "statusFilter": ""      }  <- act on this ticket
+ */
+
+(
+  /* 1. Fields */
+  $status := currJiraStatus.body.fields.status.name;
+  $mxs    := currJiraStatus.body.fields."<CF_SERVICE_TYPE>".value;
+
+  /* 2. Statuses that mean "do not transition" */
+  $skip := [
+    "Auto-Build Complete",
+    "Pending Size Inference",
+    "Catalog QA",
+    "Upload",
+    "Collections",
+    "Blocked",
+    "Resolved",
+    "Done",
+    "Reopened",
+    "In Final Review",
+    "Pending Verification",
+    "Won't Do"
+  ];
+
+  /* 3. Skip if status is in the list, OR the service type is not the
+        Auto-Build Service, OR the ticket is already at the target. */
+  $shouldSkip :=
+    ($status in $skip)
+      or ($mxs != "Auto-Build Service")
+      or ($status = updateStatus.jiraTransitionTitle);
+
+  /* 4. Emit flag: "true" = skip, "" = work on */
+  {
+    "statusFilter": $shouldSkip ? "true" : ""
+  }
+)

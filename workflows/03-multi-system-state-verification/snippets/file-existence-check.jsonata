@@ -1,0 +1,36 @@
+/*
+ * file-existence-check.jsonata
+ *
+ * Cross-system verification step. The primary signal that work is done
+ * comes from a Google Sheet column (Build Status = Completed), but the
+ * sheet is updated manually by vendors and can lead reality. The actual
+ * "done" signal is that a downstream auto-build service has consumed the
+ * input file from a shared Drive folder. So before we transition the
+ * Jira ticket, we list that folder and check whether a file containing
+ * the ticket key is still sitting there.
+ *
+ * - If a file containing the ticket key is found, the downstream service
+ *   has NOT consumed it yet, so we hold off on the transition and let
+ *   the workflow re-check on its next 2-hour run.
+ * - If no such file is found, the downstream service has finished its
+ *   work, and the transition is safe to fire.
+ *
+ * Input shape:
+ *   {
+ *     "files": [ { "name": "...", ... }, ... ],   <- from Drive list_files
+ *     "issueKey": { "Issue Key": "INTAKE-123456", ... }
+ *   }
+ *
+ * Output:
+ *   { "fileFound": true | false }
+ */
+
+{
+  "fileFound": $count(
+    $filter(files, function($f) {
+      $exists(issueKey."Issue Key")
+        ? $contains($f.name, issueKey."Issue Key")
+        : false
+    })
+  ) > 0
+}
