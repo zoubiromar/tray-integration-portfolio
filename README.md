@@ -56,8 +56,16 @@ If you've worked with Workato, Make, or n8n: same category, slightly different i
 
 ## About me
 
-I'm an Automation Specialist on a marketplace ops team, currently shipping production Tray.io workflows that span Snowflake, Salesforce, Jira, Slack, and Google Workspace. I joined automation engineering from an ops background, which is why I think hard about which step should silently skip vs. loudly fail, and why I treat upstream data sources with skepticism by default.
+I'm a Data Automation Specialist at DoorDash on the SPOT Projects team, based in Montreal. Bilingual French and English.
+
+Concrete proof points from the role:
+
+- Six production Tray.io workflows on the catalog onboarding pipeline. Over 370,000 tickets have been routed through them since August 2025.
+- Authored the team's Tray.IO Automation Guide on Confluence: seven standardized workflow pages with embedded Mermaid diagrams, used by Catalog and SPOT stakeholders.
+- Built the org's first Salesforce API integration via Tray.io (the workflow documented at [02-salesforce-milestone-graduation](./workflows/02-salesforce-milestone-graduation/)).
+
+Background before automation engineering: data science research (TensorFlow, ML for material-behavior prediction) and software development (production-floor data visualization in C#). Master of Engineering in Information Technology from ETS Montreal.
 
 Looking for integration engineer / iPaaS roles with Canadian employers.
 
-Reach me on [LinkedIn](https://www.linkedin.com/in/omarzoubir/) or by email at omarzoubir@hotmail.ca.
+Reach me on [LinkedIn](https://www.linkedin.com/in/omarzoubir/) or by email at omarzoubir97@gmail.com.

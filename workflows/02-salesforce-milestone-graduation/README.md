@@ -1,6 +1,6 @@
 # Salesforce Milestone Auto-Graduation
 
-A scheduled Tray workflow that turns a manual onboarding graduation gate into an automated one. Snowflake decides who is eligible, Salesforce gets the milestone updates, and a defensive owner read-back pattern keeps cases from drifting out of their queue.
+A scheduled Tray workflow that turns a manual onboarding graduation gate into an automated one. Snowflake decides who is eligible, Salesforce gets the milestone updates, and a defensive owner read-back pattern keeps cases from drifting out of their queue. This was the first Salesforce API integration via Tray.io at the org level.
 
 ## Problem
 
@@ -15,6 +15,8 @@ Merchant onboarding had a manual graduation gate. Analysts pulled a coverage rep
 | Action | Updates Salesforce custom milestones, appends notes, routes case ownership |
 | Connectors | Snowflake, Salesforce REST API (custom object support), JSONata |
 | Idempotency | Skip-if-already-processed gate keyed on milestone completion state |
+| Scale | 200+ merchant cases evaluated per run |
+| Note | First Salesforce API integration via Tray.io at the org level |
 
 ## Architecture
 
